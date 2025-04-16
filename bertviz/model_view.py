@@ -239,10 +239,96 @@ def model_view(
 
         __location__ = os.path.realpath(
             os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        vis_js = open(os.path.join(__location__, 'model_view.js')).read().replace("PYTHON_PARAMS", json.dumps(params))
+        vis_js = open(os.path.join(__location__, 'model_view.js')).read()
+        # Remove the RequireJS config from the JS file as we'll handle it in the HTML
+        vis_js = vis_js[vis_js.find('requirejs(['): ]
+        vis_js = vis_js.replace("PYTHON_PARAMS", json.dumps(params))
         html3 = Javascript(vis_js)
         script = '\n<script type="text/javascript">\n' + html3.data + '\n</script>\n'
 
+        # Create a complete HTML document with all required scripts
+        complete_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Attention Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min.js"></script>
+    <style>
+        .dark {{
+            background-color: #222;
+            color: #fff;
+        }}
+        .light {{
+            background-color: #fff;
+            color: #222;
+        }}
+        .attention-head {{
+            position: relative;
+            margin-bottom: 5px;
+        }}
+        .attention-head-text {{
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+        }}
+        .attention-head-map {{
+            margin-left: 100px;
+        }}
+        #vis {{
+            padding: 20px;
+        }}
+    </style>
+</head>
+<body class="{display_mode}">
+    {vis_html}
+    <script>
+    require.config({{
+        paths: {{
+            d3: 'https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min',
+            jquery: 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min'
+        }}
+    }});
+    
+    const params = {json.dumps(params)};
+    </script>
+    <script type="text/javascript">
+    {vis_js}
+    </script>
+    <script>
+    // Initialize visualization after page load
+    window.addEventListener('load', function() {{
+        require(['d3', 'jquery'], function(d3, $) {{
+            window.d3 = d3;
+            window.jQuery = $;
+            window.$ = $;
+            
+            // Initialize config object
+            const config = {{}};
+            config.attention = params.attention;
+            config.filter = params.default_filter;
+            config.rootDivId = params.root_div_id;
+            config.layers = params.include_layers;
+            config.heads = params.include_heads;
+            config.totalHeads = params.total_heads;
+            
+            // Call render function
+            render();
+        }});
+    }});
+    </script>
+</body>
+</html>
+"""
+        # Save as standalone HTML file
+        with open('attention_visualization.html', 'w', encoding='utf-8') as f:
+            f.write(complete_html)
+        
+        # Also return the IPython HTML object for notebook display
         head_html = HTML(html1.data + html2.data + script)
         return head_html
 
