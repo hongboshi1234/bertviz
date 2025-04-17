@@ -4,8 +4,8 @@ import uuid
 
 from IPython.display import display, HTML, Javascript
 
-from .util import format_special_chars, format_attention, num_layers, num_heads
-
+from .util import format_special_chars, format_attention, format_attention_all, num_layers, num_heads
+# from bertviz.util import pad_2d_tensor, add_padding, format_attention_all, num_layers, num_heads
 
 def model_view(
         attention=None,
@@ -52,6 +52,9 @@ def model_view(
     """
 
     attn_data = []
+    print('test here')
+    import pdb
+    pdb.set_trace()
     if attention is not None:
         if tokens is None:
             raise ValueError("'tokens' is required")
@@ -64,8 +67,8 @@ def model_view(
             include_layers = list(range(num_layers(attention)))
         if include_heads is None:
             include_heads = list(range(n_heads))
-        attention = format_attention(attention, include_layers, include_heads)
         if sentence_b_start is None:
+            attention = format_attention_all(attention, include_layers, include_heads)
             attn_data.append(
                 {
                     'name': None,
@@ -196,6 +199,8 @@ def model_view(
         </div>
     """
 
+    import pdb
+    pdb.set_trace()
     for d in attn_data:
         attn_seq_len_left = len(d['attn'][0][0])
         if attn_seq_len_left != len(d['left_text']):
@@ -212,7 +217,9 @@ def model_view(
         if prettify_tokens:
             d['left_text'] = format_special_chars(d['left_text'])
             d['right_text'] = format_special_chars(d['right_text'])
-
+    print(f'attn_data.shape:{len(d["attn"])}, {len(d["attn"][0])}, {len(d["attn"][0][0])}, {len(d["attn"][0][0][0])}') 
+    print(f'n_heads:{n_heads}')
+    print(f'include_layers:{include_layers}')
     params = {
         'attention': attn_data,
         'default_filter': "0",
