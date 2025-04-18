@@ -4,7 +4,7 @@ import uuid
 
 from IPython.display import display, HTML, Javascript
 
-from .util import format_special_chars, format_attention, num_layers
+from .util import format_special_chars, format_attention, format_attention_all, num_layers
 
 
 def head_view(
@@ -60,7 +60,9 @@ def head_view(
                              " argument is only for self-attention models.")
         if include_layers is None:
             include_layers = list(range(num_layers(attention)))
-        attention = format_attention(attention, include_layers)
+        attention = format_attention_all(attention, include_layers)
+        import pdb
+        pdb.set_trace()
         if sentence_b_start is None:
             attn_data.append(
                 {
@@ -186,6 +188,8 @@ def head_view(
         </div>
     """
 
+    import pdb
+    pdb.set_trace()
     for d in attn_data:
         attn_seq_len_left = len(d['attn'][0][0])
         if attn_seq_len_left != len(d['left_text']):

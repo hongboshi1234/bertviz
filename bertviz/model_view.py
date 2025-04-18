@@ -53,8 +53,8 @@ def model_view(
 
     attn_data = []
     print('test here')
-    import pdb
-    pdb.set_trace()
+    n_heads=32
+    n_layers=22
     if attention is not None:
         if tokens is None:
             raise ValueError("'tokens' is required")
@@ -62,12 +62,13 @@ def model_view(
                 or encoder_tokens is not None or decoder_tokens is not None:
             raise ValueError("If you specify 'attention' you may not specify any encoder-decoder arguments. This"
                              " argument is only for self-attention models.")
-        n_heads = num_heads(attention)
+        # n_heads = num_heads(attention)
         if include_layers is None:
-            include_layers = list(range(num_layers(attention)))
+            include_layers = list(range(n_layers))
         if include_heads is None:
             include_heads = list(range(n_heads))
         if sentence_b_start is None:
+            # attention = format_attention_all(attention, include_layers, include_heads)
             attention = format_attention_all(attention, include_layers, include_heads)
             attn_data.append(
                 {
@@ -126,7 +127,7 @@ def model_view(
             if encoder_tokens is None:
                 raise ValueError("'encoder_tokens' required if 'encoder_attention' is not None")
             if include_layers is None:
-                include_layers = list(range(num_layers(encoder_attention)))
+                include_layers = list(range(n_layers))
             n_heads = num_heads(encoder_attention)
             if include_heads is None:
                 include_heads = list(range(n_heads))
@@ -143,7 +144,7 @@ def model_view(
             if decoder_tokens is None:
                 raise ValueError("'decoder_tokens' required if 'decoder_attention' is not None")
             if include_layers is None:
-                include_layers = list(range(num_layers(decoder_attention)))
+                include_layers = list(range(n_layers))
             n_heads = num_heads(decoder_attention)
             if include_heads is None:
                 include_heads = list(range(n_heads))
@@ -162,11 +163,11 @@ def model_view(
             if decoder_tokens is None:
                 raise ValueError("'decoder_tokens' required if 'cross_attention' is not None")
             if include_layers is None:
-                include_layers = list(range(num_layers(cross_attention)))
+                include_layers = list(range(n_layers))
             n_heads = num_heads(cross_attention)
             if include_heads is None:
                 include_heads = list(range(n_heads))
-            cross_attention = format_attention(cross_attention, include_layers, include_heads)
+            cross_attention = format_attention_all(cross_attention, include_layers, include_heads)
             attn_data.append(
                 {
                     'name': 'Cross',

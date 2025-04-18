@@ -31,7 +31,7 @@ inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 with torch.no_grad():
     outputs = model.generate(
         inputs.input_ids,
-        max_new_tokens=1,
+        max_new_tokens=5,
         temperature=0.7,
         do_sample=True,
         output_attentions=True,
@@ -59,10 +59,12 @@ print(f'generated_ids:{generated_ids}, inputs.input_ids[0]:{inputs.input_ids[0]}
 output_tokens= tokenizer.convert_ids_to_tokens(generated_ids[0])
 output_index = 0
 
-tokens = input_tokens + output_tokens
+tokens =  output_tokens[:-1]
+# tokens=input_tokens
 print(f'tokens:{tokens}')
 
-aa=model_view(attention_cpu, output_tokens[:-1],html_action='return')  # Display model view
+aa=model_view(attention_cpu, tokens, include_layers=[1,2], include_heads=[1,2])  # Display model view
+
 
 # from bertviz import head_view
 # head_view(attention_cpu, output_tokens[:-1], html_action='return')

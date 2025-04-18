@@ -79,11 +79,11 @@ def format_attention(attention, layers=None, heads=None):
     return torch.stack(squeezed)
 
 def format_attention_all(attention, layers=None, heads=None):
-    import pdb
-    pdb.set_trace()
     if layers:
         attention = [ [token_attention[layer_index] for layer_index in layers] for token_attention in attention ]
     attention = add_padding(attention)
+    if heads:
+        attention = attention[:,heads,:, :]
     return attention
 
 
