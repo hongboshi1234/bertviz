@@ -67,9 +67,9 @@ def model_view(
             include_layers = list(range(n_layers))
         if include_heads is None:
             include_heads = list(range(n_heads))
+        attention = format_attention_all(attention, include_layers, include_heads)
         if sentence_b_start is None:
             # attention = format_attention_all(attention, include_layers, include_heads)
-            attention = format_attention_all(attention, include_layers, include_heads)
             attn_data.append(
                 {
                     'name': None,
@@ -83,42 +83,10 @@ def model_view(
             slice_b = slice(sentence_b_start, len(tokens))  # Position corresponding to sentence B in input
             attn_data.append(
                 {
-                    'name': 'All',
-                    'attn': attention.tolist(),
-                    'left_text': tokens,
-                    'right_text': tokens
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence A -> Sentence A',
-                    'attn': attention[:, :, slice_a, slice_a].tolist(),
-                    'left_text': tokens[slice_a],
-                    'right_text': tokens[slice_a]
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence B -> Sentence B',
-                    'attn': attention[:, :, slice_b, slice_b].tolist(),
-                    'left_text': tokens[slice_b],
-                    'right_text': tokens[slice_b]
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence A -> Sentence B',
-                    'attn': attention[:, :, slice_a, slice_b].tolist(),
-                    'left_text': tokens[slice_a],
-                    'right_text': tokens[slice_b]
-                }
-            )
-            attn_data.append(
-                {
                     'name': 'Sentence B -> Sentence A',
-                    'attn': attention[:, :, slice_b, slice_a].tolist(),
+                    'attn': attention[:, :,  slice_b, :].tolist(),
                     'left_text': tokens[slice_b],
-                    'right_text': tokens[slice_a]
+                    'right_text': tokens
                 }
             )
 
@@ -200,8 +168,6 @@ def model_view(
         </div>
     """
 
-    import pdb
-    pdb.set_trace()
     for d in attn_data:
         attn_seq_len_left = len(d['attn'][0][0])
         if attn_seq_len_left != len(d['left_text']):

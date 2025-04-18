@@ -61,8 +61,6 @@ def head_view(
         if include_layers is None:
             include_layers = list(range(num_layers(attention)))
         attention = format_attention_all(attention, include_layers)
-        import pdb
-        pdb.set_trace()
         if sentence_b_start is None:
             attn_data.append(
                 {
@@ -77,42 +75,10 @@ def head_view(
             slice_b = slice(sentence_b_start, len(tokens))  # Position corresponding to sentence B in input
             attn_data.append(
                 {
-                    'name': 'All',
-                    'attn': attention.tolist(),
-                    'left_text': tokens,
-                    'right_text': tokens
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence A -> Sentence A',
-                    'attn': attention[:, :, slice_a, slice_a].tolist(),
-                    'left_text': tokens[slice_a],
-                    'right_text': tokens[slice_a]
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence B -> Sentence B',
-                    'attn': attention[:, :, slice_b, slice_b].tolist(),
-                    'left_text': tokens[slice_b],
-                    'right_text': tokens[slice_b]
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence A -> Sentence B',
-                    'attn': attention[:, :, slice_a, slice_b].tolist(),
-                    'left_text': tokens[slice_a],
-                    'right_text': tokens[slice_b]
-                }
-            )
-            attn_data.append(
-                {
                     'name': 'Sentence B -> Sentence A',
-                    'attn': attention[:, :, slice_b, slice_a].tolist(),
+                    'attn': attention[:, :,  slice_b, :].tolist(),
                     'left_text': tokens[slice_b],
-                    'right_text': tokens[slice_a]
+                    'right_text': tokens
                 }
             )
     elif encoder_attention is not None or decoder_attention is not None or cross_attention is not None:
