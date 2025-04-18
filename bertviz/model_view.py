@@ -52,9 +52,8 @@ def model_view(
     """
 
     attn_data = []
-    print('test here')
-    n_heads=32
-    n_layers=22
+    n_heads=num_heads(attention)
+    n_layers=num_layers(attention)
     if attention is not None:
         if tokens is None:
             raise ValueError("'tokens' is required")
@@ -84,9 +83,9 @@ def model_view(
             attn_data.append(
                 {
                     'name': 'Sentence B -> Sentence A',
-                    'attn': attention[:, :,  slice_b, :].tolist(),
+                    'attn': attention[:, :, slice_b, slice_a].tolist(),
                     'left_text': tokens[slice_b],
-                    'right_text': tokens
+                    'right_text': tokens[slice_a]
                 }
             )
 
