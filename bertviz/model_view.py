@@ -4,8 +4,8 @@ import uuid
 
 from IPython.display import display, HTML, Javascript
 
-from .util import format_special_chars, format_attention, num_layers, num_heads
-
+from .util import format_special_chars, format_attention, format_attention_all, num_layers, num_heads
+# from bertviz.util import pad_2d_tensor, add_padding, format_attention_all, num_layers, num_heads
 
 def model_view(
         attention=None,
@@ -52,6 +52,8 @@ def model_view(
     """
 
     attn_data = []
+    n_heads=num_heads(attention)
+    n_layers=num_layers(attention)
     if attention is not None:
         if tokens is None:
             raise ValueError("'tokens' is required")
@@ -59,13 +61,14 @@ def model_view(
                 or encoder_tokens is not None or decoder_tokens is not None:
             raise ValueError("If you specify 'attention' you may not specify any encoder-decoder arguments. This"
                              " argument is only for self-attention models.")
-        n_heads = num_heads(attention)
+        # n_heads = num_heads(attention)
         if include_layers is None:
-            include_layers = list(range(num_layers(attention)))
+            include_layers = list(range(n_layers))
         if include_heads is None:
             include_heads = list(range(n_heads))
-        attention = format_attention(attention, include_layers, include_heads)
+        attention = format_attention_all(attention, include_layers, include_heads)
         if sentence_b_start is None:
+            # attention = format_attention_all(attention, include_layers, include_heads)
             attn_data.append(
                 {
                     'name': None,
@@ -77,38 +80,6 @@ def model_view(
         else:
             slice_a = slice(0, sentence_b_start)  # Positions corresponding to sentence A in input
             slice_b = slice(sentence_b_start, len(tokens))  # Position corresponding to sentence B in input
-            attn_data.append(
-                {
-                    'name': 'All',
-                    'attn': attention.tolist(),
-                    'left_text': tokens,
-                    'right_text': tokens
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence A -> Sentence A',
-                    'attn': attention[:, :, slice_a, slice_a].tolist(),
-                    'left_text': tokens[slice_a],
-                    'right_text': tokens[slice_a]
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence B -> Sentence B',
-                    'attn': attention[:, :, slice_b, slice_b].tolist(),
-                    'left_text': tokens[slice_b],
-                    'right_text': tokens[slice_b]
-                }
-            )
-            attn_data.append(
-                {
-                    'name': 'Sentence A -> Sentence B',
-                    'attn': attention[:, :, slice_a, slice_b].tolist(),
-                    'left_text': tokens[slice_a],
-                    'right_text': tokens[slice_b]
-                }
-            )
             attn_data.append(
                 {
                     'name': 'Sentence B -> Sentence A',
@@ -123,7 +94,7 @@ def model_view(
             if encoder_tokens is None:
                 raise ValueError("'encoder_tokens' required if 'encoder_attention' is not None")
             if include_layers is None:
-                include_layers = list(range(num_layers(encoder_attention)))
+                include_layers = list(range(n_layers))
             n_heads = num_heads(encoder_attention)
             if include_heads is None:
                 include_heads = list(range(n_heads))
@@ -140,7 +111,7 @@ def model_view(
             if decoder_tokens is None:
                 raise ValueError("'decoder_tokens' required if 'decoder_attention' is not None")
             if include_layers is None:
-                include_layers = list(range(num_layers(decoder_attention)))
+                include_layers = list(range(n_layers))
             n_heads = num_heads(decoder_attention)
             if include_heads is None:
                 include_heads = list(range(n_heads))
@@ -159,11 +130,11 @@ def model_view(
             if decoder_tokens is None:
                 raise ValueError("'decoder_tokens' required if 'cross_attention' is not None")
             if include_layers is None:
-                include_layers = list(range(num_layers(cross_attention)))
+                include_layers = list(range(n_layers))
             n_heads = num_heads(cross_attention)
             if include_heads is None:
                 include_heads = list(range(n_heads))
-            cross_attention = format_attention(cross_attention, include_layers, include_heads)
+            cross_attention = format_attention_all(cross_attention, include_layers, include_heads)
             attn_data.append(
                 {
                     'name': 'Cross',
@@ -212,7 +183,9 @@ def model_view(
         if prettify_tokens:
             d['left_text'] = format_special_chars(d['left_text'])
             d['right_text'] = format_special_chars(d['right_text'])
-
+    print(f'attn_data.shape:{len(d["attn"])}, {len(d["attn"][0])}, {len(d["attn"][0][0])}, {len(d["attn"][0][0][0])}') 
+    print(f'n_heads:{n_heads}')
+    print(f'include_layers:{include_layers}')
     params = {
         'attention': attn_data,
         'default_filter': "0",
@@ -239,10 +212,96 @@ def model_view(
 
         __location__ = os.path.realpath(
             os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        vis_js = open(os.path.join(__location__, 'model_view.js')).read().replace("PYTHON_PARAMS", json.dumps(params))
+        vis_js = open(os.path.join(__location__, 'model_view.js')).read()
+        # Remove the RequireJS config from the JS file as we'll handle it in the HTML
+        vis_js = vis_js[vis_js.find('requirejs(['): ]
+        vis_js = vis_js.replace("PYTHON_PARAMS", json.dumps(params))
         html3 = Javascript(vis_js)
         script = '\n<script type="text/javascript">\n' + html3.data + '\n</script>\n'
 
+        # Create a complete HTML document with all required scripts
+        complete_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Attention Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min.js"></script>
+    <style>
+        .dark {{
+            background-color: #222;
+            color: #fff;
+        }}
+        .light {{
+            background-color: #fff;
+            color: #222;
+        }}
+        .attention-head {{
+            position: relative;
+            margin-bottom: 5px;
+        }}
+        .attention-head-text {{
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+        }}
+        .attention-head-map {{
+            margin-left: 100px;
+        }}
+        #vis {{
+            padding: 20px;
+        }}
+    </style>
+</head>
+<body class="{display_mode}">
+    {vis_html}
+    <script>
+    require.config({{
+        paths: {{
+            d3: 'https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min',
+            jquery: 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min'
+        }}
+    }});
+    
+    const params = {json.dumps(params)};
+    </script>
+    <script type="text/javascript">
+    {vis_js}
+    </script>
+    <script>
+    // Initialize visualization after page load
+    window.addEventListener('load', function() {{
+        require(['d3', 'jquery'], function(d3, $) {{
+            window.d3 = d3;
+            window.jQuery = $;
+            window.$ = $;
+            
+            // Initialize config object
+            const config = {{}};
+            config.attention = params.attention;
+            config.filter = params.default_filter;
+            config.rootDivId = params.root_div_id;
+            config.layers = params.include_layers;
+            config.heads = params.include_heads;
+            config.totalHeads = params.total_heads;
+            
+            // Call render function
+            render();
+        }});
+    }});
+    </script>
+</body>
+</html>
+"""
+        # Save as standalone HTML file
+        with open('attention_visualization.html', 'w', encoding='utf-8') as f:
+            f.write(complete_html)
+        
+        # Also return the IPython HTML object for notebook display
         head_html = HTML(html1.data + html2.data + script)
         return head_html
 
