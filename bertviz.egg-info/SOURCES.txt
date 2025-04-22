@@ -3,6 +3,7 @@ MANIFEST.in
 README.md
 setup.py
 bertviz/__init__.py
+bertviz/head_map_view.py
 bertviz/head_view.js
 bertviz/head_view.py
 bertviz/model_view.js
